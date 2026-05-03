@@ -4,3 +4,104 @@ import random
 import math
 import os
 from collections import deque
+from pygame._sdl2 import Window
+
+GAME_RES = (1920, 1080)
+
+
+pygame.init()
+virtual_surface = pygame.display.set_mode((10, 10), pygame.RESIZABLE)
+Window.from_display_module().maximize()
+screen = pygame.Surface(GAME_RES)
+width = screen.get_width()
+height = screen.get_height()
+
+
+Massive_font = pygame.font.Font(None, 200)
+title_font = pygame.font.Font(None, 74)
+text_font = pygame.font.Font(None, 36)
+bold_font = pygame.font.Font(None, 44)
+clock = pygame.time.Clock()
+
+x,y =0,0
+
+def draw_image_fast(surface, x, y, angle):
+    if angle != 0:
+        rotated_surface = pygame.transform.rotate(surface, angle)
+        rect = rotated_surface.get_rect(center=(x, y))
+        screen.blit(rotated_surface, rect)
+    else:
+        rect = surface.get_rect(center=(x, y))
+        screen.blit(surface, rect)
+def draw_image_standerd(image, x, y, angle, cell_size=80):
+    image_rect = image.get_rect()
+    scale_factor = min(cell_size / image_rect.width, cell_size / image_rect.height)
+    new_size = (int(image_rect.width * scale_factor), int(image_rect.height * scale_factor))
+    image = pygame.transform.scale(image, new_size)
+    image = pygame.transform.rotate(image, angle)
+    rect = image.get_rect(center=(x, y))
+    screen.blit(image, rect)
+def draw_text(text, font, color, x, y, center=True):
+    surface = font.render(text, True, color)
+    rect = surface.get_rect()
+    if center:
+        rect.center = (x, y)
+    else:
+        rect.topleft = (x, y)
+    screen.blit(surface, rect)
+def screen_to_surface():
+    mouse_pos()
+    scaled_surface = pygame.transform.scale(screen, virtual_surface.get_size())
+    virtual_surface.blit(scaled_surface, (0, 0))
+    pygame.display.flip()
+def mouse_pos():
+    global mouse_x, mouse_y
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    width = screen.get_width()
+    height = screen.get_height()
+    width2 = virtual_surface.get_width()
+    height2 = virtual_surface.get_height()
+    mouse_x *=(width/width2)
+    mouse_y *=(height/height2)
+def get_colored_sprite(surface, color):
+
+    colored_surface = surface.copy()
+    tint = pygame.Surface(colored_surface.get_size(), pygame.SRCALPHA)
+    tint.fill(color)
+    colored_surface.blit(tint, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+    return colored_surface
+
+
+def add_message(message, time = 180):
+    global messages
+    messages.append([message, time])
+def load_message():
+    global messages
+    for i in range(len(messages) - 1, -1, -1):
+        draw_text(messages[i][0], bold_font, (0,0,0), width/2, 150+i*50, center=True)
+        messages[i][1]-=1
+        if messages[i][1] <=0:
+            messages.pop(i)
+
+running = True
+count = 0
+
+
+while running:
+    count +=1
+    screen.fill((30, 30, 30))
+    draw_text(f"Battle Factory!", title_font, (200, 255, 255), width // 2, height //2 )
+    draw_text(f"Click to continue", bold_font, (255, 255, 255), width // 2, height - height/4)
+
+    clock.tick(60)
+
+    screen_to_surface()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                print("Game starting...")
+                running = False
