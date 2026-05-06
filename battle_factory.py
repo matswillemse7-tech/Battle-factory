@@ -6,7 +6,7 @@ import os
 from collections import deque
 from pygame._sdl2 import Window
 
-GAME_RES = (1920, 1080)
+GAME_RES = (1920, 1009)
 
 
 pygame.init()
@@ -15,7 +15,8 @@ Window.from_display_module().maximize()
 screen = pygame.Surface(GAME_RES)
 width = screen.get_width()
 height = screen.get_height()
-
+height2 = virtual_surface.get_height()
+print(height, height2, height2-height)
 
 Massive_font = pygame.font.Font(None, 200)
 title_font = pygame.font.Font(None, 74)
@@ -83,6 +84,14 @@ def load_message():
         if messages[i][1] <=0:
             messages.pop(i)
 
+
+GRID_WIDTH = 20
+GRID_HEIGHT = 20
+TILE_SIZE = 42
+overlay_WIDTH = GRID_WIDTH * TILE_SIZE
+overlay_HEIGHT = GRID_HEIGHT * TILE_SIZE
+overlay = pygame.Surface((overlay_WIDTH, overlay_HEIGHT), pygame.SRCALPHA)
+grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
 running = True
 count = 0
 
@@ -105,3 +114,19 @@ while running:
             if event.button == 1:
                 print("Game starting...")
                 running = False
+
+running = 1
+while running:
+    screen.fill((0, 0, 0))
+    for r in range(GRID_HEIGHT):
+        for c in range(GRID_WIDTH):
+            color = (50, 50, 50) if grid[r][c] == 1 else (100, 100, 100)
+            pygame.draw.rect(screen, color, (width/2-overlay_WIDTH/2+c*TILE_SIZE, 30+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
+
+
+
+    screen_to_surface()
+    clock.tick(60)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
