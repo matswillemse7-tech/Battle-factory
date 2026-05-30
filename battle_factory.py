@@ -18,6 +18,8 @@ height = screen.get_height()
 height2 = virtual_surface.get_height()
 print(height, height2, height2-height)
 
+robot_IMG = pygame.image.load("graphics/temp_robot.png").convert_alpha()
+
 Massive_font = pygame.font.Font(None, 200)
 title_font = pygame.font.Font(None, 74)
 text_font = pygame.font.Font(None, 36)
@@ -85,13 +87,43 @@ def load_message():
             messages.pop(i)
 
 
-GRID_WIDTH = 20
-GRID_HEIGHT = 20
+def draw_grid():
+    for r in range(GRID_HEIGHT):
+        for c in range(GRID_WIDTH):
+            color = (50, 50, 50) if grid[r][c] == 1 else (100, 100, 100)
+            pygame.draw.rect(screen, color, (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
+
+def draw_factory():
+    for r in range(GRID_HEIGHT):
+        for c in range(GRID_WIDTH):
+            if grid[r][c] != -1:
+                if grid_id[grid[r][c]][0] == "robot_spawner":
+                    pygame.draw.rect(screen, (140, 255, 255), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
+                if grid_id[grid[r][c]][0] == "robot_exit":
+                    pygame.draw.rect(screen, (255, 180, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
+                
+
+
+                if grid_id[grid[r][c]][1] == 0:
+                    pygame.draw.rect(screen, (0, 0, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE+18, 65+r*TILE_SIZE, 5, 20))
+                if grid_id[grid[r][c]][1] == 2:
+                    pygame.draw.rect(screen, (0, 0, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE+18, 65+r*TILE_SIZE+20, 5, 20))
+                if grid_id[grid[r][c]][1] == 1:
+                    pygame.draw.rect(screen, (0, 0, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+18, 20, 5))
+                if grid_id[grid[r][c]][1] == 3:
+                    pygame.draw.rect(screen, (0, 0, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE+18, 20, 5))
+
+def draw_inventory():
+    pass
+
+
+GRID_WIDTH = 21
+GRID_HEIGHT = 21
 TILE_SIZE = 42
 overlay_WIDTH = GRID_WIDTH * TILE_SIZE
 overlay_HEIGHT = GRID_HEIGHT * TILE_SIZE
 overlay = pygame.Surface((overlay_WIDTH, overlay_HEIGHT), pygame.SRCALPHA)
-grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
+grid = [[-1 for _ in range(GRID_HEIGHT)] for _ in range(GRID_WIDTH)]
 running = True
 count = 0
 
@@ -99,7 +131,7 @@ count = 0
 while running:
     count +=1
     screen.fill((30, 30, 30))
-    draw_text(f"Battle Factory!", title_font, (200, 255, 255), width // 2, height //2 )
+    draw_text(f"Battle Factory!", title_font, (255, 255, 200), width // 2, height //2 )
     draw_text(f"Click to continue", bold_font, (255, 255, 255), width // 2, height - height/4)
 
     clock.tick(60)
@@ -115,13 +147,19 @@ while running:
                 print("Game starting...")
                 running = False
 
+
+grid[10][0] = 0
+grid[10][20] = 1
+grid_id = []
+grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
+grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 running = 1
 while running:
-    screen.fill((0, 0, 0))
-    for r in range(GRID_HEIGHT):
-        for c in range(GRID_WIDTH):
-            color = (50, 50, 50) if grid[r][c] == 1 else (100, 100, 100)
-            pygame.draw.rect(screen, color, (width/2-overlay_WIDTH/2+c*TILE_SIZE, 30+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
+    screen.fill((0, 0, 10))
+    draw_grid()
+    draw_factory()
+
+    draw_inventory()
 
 
 
