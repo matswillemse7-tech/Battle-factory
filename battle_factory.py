@@ -10,7 +10,7 @@ GAME_RES = (1920, 1009)
 
 
 pygame.init()
-virtual_surface = pygame.display.set_mode((10, 10), pygame.RESIZABLE)
+virtual_surface = pygame.display.set_mode((600, 400), pygame.RESIZABLE)
 Window.from_display_module().maximize()
 screen = pygame.Surface(GAME_RES)
 width = screen.get_width()
@@ -27,7 +27,8 @@ bold_font = pygame.font.Font(None, 44)
 clock = pygame.time.Clock()
 
 x,y =0,0
-
+gamemode = "factory"
+messages = [];robots = [];items = []
 def draw_image_fast(surface, x, y, angle):
     if angle != 0:
         rotated_surface = pygame.transform.rotate(surface, angle)
@@ -81,10 +82,22 @@ def add_message(message, time = 180):
 def load_message():
     global messages
     for i in range(len(messages) - 1, -1, -1):
-        draw_text(messages[i][0], bold_font, (0,0,0), width/2, 150+i*50, center=True)
+        draw_text(messages[i][0], bold_font, (255,255,255), width/2, 150+i*50, center=True)
         messages[i][1]-=1
         if messages[i][1] <=0:
             messages.pop(i)
+def draw_play_button():
+    global gamemode, count
+    pts = [(1600, 120), (1600, 240), (1700, 180)]
+    pygame.draw.polygon(screen, (46, 204, 113), pts)
+    pygame.draw.polygon(screen, (27, 102, 57), pts, 10)
+    button_rect = pygame.Rect(1600, 120, 100, 120)
+    if button_rect.collidepoint(mouse_x, mouse_y):
+        if pygame.mouse.get_pressed()[0]:
+            gamemode = "factory_go"
+            count = 0
+            items = []
+            robots = []
 
 
 def draw_grid():
@@ -115,6 +128,46 @@ def draw_factory():
 
 def draw_inventory():
     pass
+
+def move_items():
+    global items, robots
+    for r in range(GRID_HEIGHT):
+        for c in range(GRID_WIDTH):
+            if grid[r][c] != -1:
+                if grid_id[grid[r][c]][0] == "robot_spawner":
+                    if count == 0:
+                        robots.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][1], []])#x, y, direction, inventory
+    for item in robots:
+        row = int((item[1]-65)/TILE_SIZE)
+        col = int((item[0]-(width/2-overlay_WIDTH/2))/TILE_SIZE)
+        if not (row >= 0 and row < GRID_HEIGHT and col >= 0 and col < GRID_WIDTH):
+            add_message("Robot escaped the factory!")
+            robots.remove(item)
+        elif grid[row][col] != -1:
+            if grid_id[grid[row][col]][0] == "robot_exit":
+                item[2] = 6; item[0] = width/2-overlay_WIDTH/2+col*TILE_SIZE+20; item[1] = 65+row*TILE_SIZE+20
+        
+        if item[2] == 0:
+            item[1]-=0.3
+        if item[2] == 2:
+            item[1]+=0.3
+        if item[2] == 1:
+            item[0]+=0.3
+        if item[2] == 3:
+            item[0]-=0.3
+
+def draw_items():
+    for item in items:
+        pygame.draw.circle(screen, (255, 255, 0), (int(item[0]), int(item[1])), 10)
+    for item in robots:
+        draw_image_fast(robot_IMG, item[0], item[1], item[2]*90-90)
+def draw_progress():
+    counter = 0
+    for item in robots:
+        if item[2] == 6:
+            counter +=1
+    draw_text(f"Robot progress {counter}/{len(robots)}", text_font, (255, 255, 255), width/2+700, height-50)
+
 
 
 GRID_WIDTH = 21
@@ -148,23 +201,39 @@ while running:
                 running = False
 
 
-grid[10][0] = 0
+grid[10][15] = 0
 grid[10][20] = 1
 grid_id = []
 grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 running = 1
+
 while running:
+    count +=1
+
+
     screen.fill((0, 0, 10))
-    draw_grid()
-    draw_factory()
-
-    draw_inventory()
+    if gamemode == "factory": draw_play_button()
 
 
+    if gamemode == "factory" or gamemode == "factory_go" :draw_grid()
+    if gamemode == "factory" or gamemode == "factory_go" :draw_factory()
 
+    if gamemode == "factory": draw_inventory()
+    if gamemode == "factory_go": move_items()
+    if gamemode == "factory_go": draw_items()
+    if gamemode == "factory_go": draw_progress()
+    
+
+
+    
+
+
+
+    load_message()
     screen_to_surface()
     clock.tick(60)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
