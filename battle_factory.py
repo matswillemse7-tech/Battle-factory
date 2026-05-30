@@ -112,6 +112,8 @@ def draw_rectangle(x, y, width, height, color1, color2, edge = 2, round=0):
     rect = pygame.Rect(x, y, width, height)
     pygame.draw.rect(screen, color1, rect, border_radius = round)
 
+
+
 def draw_grid():
     for r in range(GRID_HEIGHT):
         for c in range(GRID_WIDTH):
@@ -172,7 +174,15 @@ def draw_items():
     for item in items:
         pygame.draw.circle(screen, (255, 255, 0), (int(item[0]), int(item[1])), 10)
     for item in robots:
-        draw_image_fast(robot_IMG, item[0], item[1], item[2]*90-90)
+        draw_image_standerd(head1_IMG, item[0]+3, item[1]-16, item[2]*90-90, 16)
+        draw_image_standerd(body1_IMG, item[0], item[1]-4, 0, 16)
+        draw_image_standerd(arm1_IMG, item[0]+12, item[1]-8-4*math.sin(count/10+3), 0+int(math.sin(count/10+3)*30), 12)
+        draw_image_standerd(arm1_IMG, item[0]-12, item[1]-8+4*math.sin(count/10+3), 180+int(math.sin(count/10+3)*30), 12)
+        draw_image_standerd(leg1_IMG, item[0]+4+4*math.sin(count/10+3), item[1]+8, int(math.sin(count/10+3)*30), 12)
+        draw_image_standerd(leg1_IMG, item[0]-4+4*math.sin(count/10), item[1]+8, int(math.sin(count/10)*30), 12)
+
+
+
 def draw_progress():
     global gamemode
     counter = 0
@@ -218,7 +228,7 @@ def draw_battle_background():
 
             if tile_id in tile_color_map:
                 color = tile_color_map[tile_id]
-                pygame.draw.rect(screen, color, (c * tilesize, r * tilesize, tilesize, tilesize))
+                pygame.draw.rect(screen, color, (c * tilesize+16, r * tilesize, tilesize, tilesize))
 
 
 
