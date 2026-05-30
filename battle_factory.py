@@ -136,7 +136,7 @@ def move_items():
             if grid[r][c] != -1:
                 if grid_id[grid[r][c]][0] == "robot_spawner":
                     if count == 0:
-                        robots.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][1], []])#x, y, direction, inventory
+                        robots.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][1], [0,0,0,0,0,0,0]])#x, y, direction, inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6)
     for item in robots:
         row = int((item[1]-65)/TILE_SIZE)
         col = int((item[0]-(width/2-overlay_WIDTH/2))/TILE_SIZE)
@@ -162,11 +162,14 @@ def draw_items():
     for item in robots:
         draw_image_fast(robot_IMG, item[0], item[1], item[2]*90-90)
 def draw_progress():
+    global gamemode
     counter = 0
     for item in robots:
         if item[2] == 6:
             counter +=1
     draw_text(f"Robot progress {counter}/{len(robots)}", text_font, (255, 255, 255), width/2+700, height-50)
+    if len(robots) > 0 and counter/len(robots) == 1:
+        gamemode = "Map"
 
 
 
