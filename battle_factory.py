@@ -5,6 +5,7 @@ import math
 import os
 from collections import deque
 from pygame._sdl2 import Window
+from map_data_getter import map_data_get
 
 GAME_RES = (1920, 1009)
 
@@ -19,6 +20,7 @@ height2 = virtual_surface.get_height()
 print(height, height2, height2-height)
 
 robot_IMG = pygame.image.load("graphics/temp_robot.png").convert_alpha()
+space_ship_map_IMG = pygame.image.load("graphics/Space_ship_map.png").convert_alpha()
 
 Massive_font = pygame.font.Font(None, 200)
 title_font = pygame.font.Font(None, 74)
@@ -26,9 +28,10 @@ text_font = pygame.font.Font(None, 36)
 bold_font = pygame.font.Font(None, 44)
 clock = pygame.time.Clock()
 
+map_data = map_data_get()
 x,y =0,0
 gamemode = "factory"
-messages = [];robots = [];items = []
+messages = [];robots = [];items = []; area = ""; area_current = 0
 def draw_image_fast(surface, x, y, angle):
     if angle != 0:
         rotated_surface = pygame.transform.rotate(surface, angle)
@@ -98,7 +101,11 @@ def draw_play_button():
             count = 0
             items = []
             robots = []
-
+def draw_rectangle(x, y, width, height, color1, color2, edge = 2, round=0):
+    rect = pygame.Rect(x-edge, y-edge, width+edge*2, height+edge*2)
+    pygame.draw.rect(screen, color2, rect, border_radius = round)
+    rect = pygame.Rect(x, y, width, height)
+    pygame.draw.rect(screen, color1, rect, border_radius = round)
 
 def draw_grid():
     for r in range(GRID_HEIGHT):
@@ -169,7 +176,45 @@ def draw_progress():
             counter +=1
     draw_text(f"Robot progress {counter}/{len(robots)}", text_font, (255, 255, 255), width/2+700, height-50)
     if len(robots) > 0 and counter/len(robots) == 1:
-        gamemode = "Map"
+        gamemode = "map"
+
+def draw_map():
+    global gamemode, area, area_current
+    screen.fill((0, 0, 30))
+    draw_rectangle(width/2-200, height/2-100, 400, 200, (130, 130, 130), (100, 100, 100), edge=10)
+    draw_text("Ruins", title_font, (50, 50, 50), width/2, height/2)
+    rect = pygame.Rect(width/2-200, height/2-100, 400, 200)
+    if rect.collidepoint(mouse_x, mouse_y):
+        if pygame.mouse.get_pressed()[0]:
+            add_message("Entering the ruins...")
+            gamemode = "battle"
+            area = 0 #"ruins"
+            area_current= 0
+
+
+
+def draw_battle_background():
+    tilesize = 42
+    
+    # ruins color map
+    tile_color_map = {
+    0: (56, 65, 75),  # Background
+    1: (24, 18, 30),     # Ground
+    2: (24, 38, 30),     # Ground Alt (green)
+    3: (92, 87, 88),  # Floor
+    4: (34, 34, 40),     # Old buildings
+    5: (20, 18, 25),     # Shadow background
+    6: (37, 54, 45),    # Green background
+    }
+    current_grid = map_data[area][area_current]
+    for r in range(len(current_grid)):
+        for c in range(len(current_grid[0])):
+            tile_id = current_grid[r][c]
+
+            if tile_id in tile_color_map:
+                color = tile_color_map[tile_id]
+                pygame.draw.rect(screen, color, (c * tilesize, r * tilesize, tilesize, tilesize))
+
 
 
 
@@ -204,7 +249,7 @@ while running:
                 running = False
 
 
-grid[10][15] = 0
+grid[10][18] = 0
 grid[10][20] = 1
 grid_id = []
 grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
@@ -213,9 +258,11 @@ running = 1
 
 while running:
     count +=1
+    print(gamemode)
 
 
     screen.fill((0, 0, 10))
+
     if gamemode == "factory": draw_play_button()
 
 
@@ -228,8 +275,8 @@ while running:
     if gamemode == "factory_go": draw_progress()
     
 
-
-    
+    if gamemode == "map": draw_map()
+    if gamemode == "battle": draw_battle_background()
 
 
 
