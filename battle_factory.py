@@ -20,6 +20,11 @@ height2 = virtual_surface.get_height()
 print(height, height2, height2-height)
 
 robot_IMG = pygame.image.load("graphics/temp_robot.png").convert_alpha()
+head1_IMG = pygame.image.load("graphics/head1.png").convert_alpha()
+leg1_IMG = pygame.image.load("graphics/leg1.png").convert_alpha()
+body1_IMG = pygame.image.load("graphics/body1.png").convert_alpha()
+arm1_IMG = pygame.image.load("graphics/arm1.png").convert_alpha()
+
 space_ship_map_IMG = pygame.image.load("graphics/Space_ship_map.png").convert_alpha()
 
 Massive_font = pygame.font.Font(None, 200)
