@@ -6,6 +6,7 @@ import os
 from collections import deque
 from pygame._sdl2 import Window
 from map_data_getter import map_data_get
+from map_data_getter import enemy_spawn_get
 import pymunk
 import pymunk.pygame_util
 from test_ragdol import add_ragdoll
@@ -28,6 +29,7 @@ head1_IMG = pygame.image.load("graphics/head1.png").convert_alpha()
 leg1_IMG = pygame.image.load("graphics/leg1.png").convert_alpha()
 body1_IMG = pygame.image.load("graphics/body1.png").convert_alpha()
 arm1_IMG = pygame.image.load("graphics/arm1.png").convert_alpha()
+basic_machine_head_IMG = pygame.image.load("graphics/basic_machine_head.png").convert_alpha()
 
 space_ship_map_IMG = pygame.image.load("graphics/Space_ship_map.png").convert_alpha()
 
@@ -38,9 +40,11 @@ bold_font = pygame.font.Font(None, 44)
 clock = pygame.time.Clock()
 
 map_data = map_data_get()
+enemy_spawn = enemy_spawn_get()
+
 x,y =0,0
 gamemode = "factory"
-messages = [];robots = [];items = []; area = ""; area_current = 0
+messages = [];robots = [];items = []; area = ""; area_current = 0; enemies = []
 def draw_image_fast(surface, x, y, angle):
     if angle != 0:
         rotated_surface = pygame.transform.rotate(surface, angle)
@@ -214,22 +218,46 @@ def draw_map():
             first_time_load = True
             count = 0
 
+def check_bounds():
+    global battle_robots, space, first_time_load
+    for robot in battle_robots:
+        print(robot[0])
+        if robot[0] > 1900:
+            first_time_load = True
+            area_current +=1
+            for robot in battle_robots:
+                robot[5] = "ragdolled"; robot[6] = 60
+            space = pymunk.Space()
+
 
 def append_robots():
     global battle_robots
     battle_robots = []
     for robot in robots:
         battle_robots.append([200, 500, robot[3], 10, 10, "ragdolled", 180])#x0, y1, inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6), hp3, maxhp4, status5, statusduration6
+    
+def spawn_enemies():
+    global enemies
+    if enemy_spawn[area][area_current] != [0]:
+        for i, spawner in enumerate(enemy_spawn[area][area_current]):
+            enemies.append([spawner[0], spawner[2]*40+36, spawner[1]*40+20, 10, 10])#type0, x1, y2, hp3, maxhp4 warning x and y not calibrated yet 
+            if spawner[0] == "basic_machine":
+                head = pymunk.Body(10, 100)
+                head.position = (enemies[i][1], enemies[i][2])
+                head_shape = pymunk.Circle(head, 24)
+                head_shape.friction = 1
+                head_shape.filter = pymunk.ShapeFilter(group=2)
+                head_shape.part = 'basic_machine_head'
+                head_shape.enemy = i
 
-
+    
 
 
 def draw_battle_units():
     global battle_robots
     if first_time_load:
         for j, robot in enumerate(battle_robots):
-            print(robot)
-            add_ragdoll(space,(300,300), j)
+            add_ragdoll(space,(300+random.randint(-100,100),300), j)
     for i, shape in enumerate(space.shapes):
         if hasattr(shape, 'part'):
             if shape.part == 'head':
@@ -253,6 +281,8 @@ def draw_battle_units():
                 #if battle_robots[shape.robot][5] == "moving right": shape.body.apply_force_at_world_point((shape.body.mass * 80, 0), (shape.body.position.x, shape.body.position.y))
             if shape.part == 'arm':
                 draw_image_standerd(arm1_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle)-90, 20)
+            if shape.part == 'basic_machine_head':
+                draw_image_standerd(basic_machine_head_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle), 24)
        
 
 def manage_robot_status():
@@ -279,14 +309,14 @@ def manage_robot_status():
 def temp_wasd_robot():
     global battle_robots
     if len(battle_robots) > 0:
-        robot = battle_robots[0]
-        if robot[5] != "ragdolled":
-            if pygame.key.get_pressed()[pygame.K_a]:
-                robot[5] = "moving left"
-                robot[6] = 10
-            if pygame.key.get_pressed()[pygame.K_d]:
-                robot[5] = "moving right"
-                robot[6] = 10  
+        for robot in battle_robots:
+            if robot[5] != "ragdolled":
+                if pygame.key.get_pressed()[pygame.K_a]:
+                    robot[5] = "moving left"
+                    robot[6] = 10
+                if pygame.key.get_pressed()[pygame.K_d]:
+                    robot[5] = "moving right"
+                    robot[6] = 10  
         
 
 
@@ -325,9 +355,11 @@ grid[10][18] = 0
 grid[10][20] = 1
 
 
+
 grid_id = []
 grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
+grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 running = 1
 
 space = pymunk.Space()
@@ -353,12 +385,15 @@ while running:
     if gamemode == "factory_go": draw_progress()
     if gamemode == "map": draw_map()
 
+    if gamemode == "battel": check_bounds()
     if gamemode == "battle" and first_time_load and count == 0: append_robots(); print("Appended robots")
+    if gamemode == "battle" and first_time_load: spawn_enemies()
     if gamemode == "battle": draw_battle_background(screen, space, map_data, area, area_current)
     if gamemode == "battle" and debug_physics: space.debug_draw(draw_options)
     if gamemode == "battle": draw_battle_units()
     if gamemode == "battle": manage_robot_status()
     if gamemode == "battle": temp_wasd_robot()
+   
 
 
 

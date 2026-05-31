@@ -36,9 +36,17 @@ current_brush = 1
 def print_matrix(data):
     print(data)
 
+def print_nonzero_units(data):
+    """Print each non-zero unit as ["number", column, row]"""
+    for row in range(len(data)):
+        for col in range(len(data[row])):
+            val = data[row][col]
+            if val != 0:
+                print(f'[{val}, {col}, {row}]')
+
 running = True
 while running:
-    pygame.display.set_caption(f"Map Editor | Active Brush: {current_brush} | Press 0-9 to change brush | SPACE to print array")
+    pygame.display.set_caption(f"Map Editor | Active Brush: {current_brush} | Press 0-9 to change brush | SPACE to print array | K to print non-zero units")
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -49,6 +57,8 @@ while running:
                 running = False
             elif event.key == pygame.K_SPACE:
                 print_matrix(matrix_data)
+            elif event.key == pygame.K_k:
+                print_nonzero_units(matrix_data)
             elif pygame.K_0 <= event.key <= pygame.K_9:
                 current_brush = event.key - pygame.K_0
 
