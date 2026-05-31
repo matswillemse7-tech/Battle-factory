@@ -385,7 +385,7 @@ while running:
     if gamemode == "factory_go": draw_progress()
     if gamemode == "map": draw_map()
 
-    if gamemode == "battle": check_bounds()
+    if gamemode == "battle" and not first_time_load: check_bounds()
     if gamemode == "battle" and first_time_load and count == 0: append_robots(); print("Appended robots")
     if gamemode == "battle" and first_time_load: spawn_enemies()
     if gamemode == "battle": draw_battle_background(screen, space, map_data, area, area_current)
