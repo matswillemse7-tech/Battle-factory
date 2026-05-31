@@ -6,18 +6,22 @@ import os
 from collections import deque
 from pygame._sdl2 import Window
 from map_data_getter import map_data_get
+import pymunk
+import pymunk.pygame_util
+from test_ragdol import add_ragdoll
+from background import draw_battle_background
 
 GAME_RES = (1920, 1009)
 
 
 pygame.init()
+pygame.display.set_caption("Evil Bitcoin Miner")
 virtual_surface = pygame.display.set_mode((600, 400), pygame.RESIZABLE)
 Window.from_display_module().maximize()
 screen = pygame.Surface(GAME_RES)
 width = screen.get_width()
 height = screen.get_height()
 height2 = virtual_surface.get_height()
-print(height, height2, height2-height)
 
 robot_IMG = pygame.image.load("graphics/temp_robot.png").convert_alpha()
 head1_IMG = pygame.image.load("graphics/head1.png").convert_alpha()
@@ -145,12 +149,13 @@ def draw_inventory():
 
 def move_items():
     global items, robots
-    for r in range(GRID_HEIGHT):
-        for c in range(GRID_WIDTH):
-            if grid[r][c] != -1:
-                if grid_id[grid[r][c]][0] == "robot_spawner":
-                    if count == 0:
-                        robots.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][1], [0,0,0,0,0,0,0]])#x, y, direction, inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6)
+    if count == 0:
+        robots = []
+        for r in range(GRID_HEIGHT):
+            for c in range(GRID_WIDTH):
+                if grid[r][c] != -1:
+                    if grid_id[grid[r][c]][0] == "robot_spawner":
+                        robots.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][1], [0,0,0,0,0,0,0]])#x0, y1, direction2, 3inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6)
     for item in robots:
         row = int((item[1]-65)/TILE_SIZE)
         col = int((item[0]-(width/2-overlay_WIDTH/2))/TILE_SIZE)
@@ -184,7 +189,7 @@ def draw_items():
 
 
 def draw_progress():
-    global gamemode
+    global gamemode, first_time_load, count
     counter = 0
     for item in robots:
         if item[2] == 6:
@@ -193,8 +198,9 @@ def draw_progress():
     if len(robots) > 0 and counter/len(robots) == 1:
         gamemode = "map"
 
+
 def draw_map():
-    global gamemode, area, area_current
+    global gamemode, area, area_current, first_time_load, count
     screen.fill((0, 0, 30))
     draw_rectangle(width/2-200, height/2-100, 400, 200, (130, 130, 130), (100, 100, 100), edge=10)
     draw_text("Ruins", title_font, (50, 50, 50), width/2, height/2)
@@ -205,31 +211,38 @@ def draw_map():
             gamemode = "battle"
             area = 0 #"ruins"
             area_current= 0
+            first_time_load = True
+            count = 0
+
+
+def append_robots():
+    global battle_robots
+    battle_robots = []
+    for robot in robots:
+        battle_robots.append([200, 500, robot[3], 10, 10])#x0, y1, inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6), hp3, maxhp4
 
 
 
-def draw_battle_background():
-    tilesize = 42
-    
-    # ruins color map
-    tile_color_map = {
-    0: (56, 65, 75),  # Background
-    1: (24, 18, 30),     # Ground
-    2: (24, 38, 30),     # Ground Alt (green)
-    3: (92, 87, 88),  # Floor
-    4: (34, 34, 40),     # Old buildings
-    5: (20, 18, 25),     # Shadow background
-    6: (37, 54, 45),    # Green background
-    }
-    current_grid = map_data[area][area_current]
-    for r in range(len(current_grid)):
-        for c in range(len(current_grid[0])):
-            tile_id = current_grid[r][c]
 
-            if tile_id in tile_color_map:
-                color = tile_color_map[tile_id]
-                pygame.draw.rect(screen, color, (c * tilesize+16, r * tilesize, tilesize, tilesize))
-
+def draw_battle_units():
+    global battle_robots
+    if first_time_load:
+        for robot in battle_robots:
+            print(robot)
+            add_ragdoll(space,(300,300), 1)
+    for i, shape in enumerate(space.shapes):
+        if hasattr(shape, 'part'):
+            if shape.part == 'head':
+                draw_image_standerd(head1_IMG, shape.body.position.x, shape.body.position.y, math.degrees(shape.body.angle), 24)
+            if shape.part == 'leg':
+                draw_image_standerd(leg1_IMG, shape.body.position.x, shape.body.position.y, math.degrees(shape.body.angle), 16)
+            if shape.part == 'body':
+                draw_image_standerd(body1_IMG, shape.body.position.x, shape.body.position.y, math.degrees(shape.body.angle), 24)
+            if shape.part == 'arm':
+                draw_image_standerd(arm1_IMG, shape.body.position.x, shape.body.position.y, math.degrees(shape.body.angle), 16)
+       
+            
+        
 
 
 
@@ -260,22 +273,27 @@ while running:
             sys.exit()
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                print("Game starting...")
                 running = False
 
 
 grid[10][18] = 0
 grid[10][20] = 1
+
+
 grid_id = []
 grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 running = 1
 
+space = pymunk.Space()
+space.gravity = (0.0, 900)
+draw_options = pymunk.pygame_util.DrawOptions(screen)
+debug_physics = True
+
 while running:
     count +=1
-    print(gamemode)
 
-
+    first_time_load = False
     screen.fill((0, 0, 10))
 
     if gamemode == "factory": draw_play_button()
@@ -288,14 +306,18 @@ while running:
     if gamemode == "factory_go": move_items()
     if gamemode == "factory_go": draw_items()
     if gamemode == "factory_go": draw_progress()
+    if gamemode == "map": draw_map()
+
+    if gamemode == "battle" and first_time_load and count == 0: append_robots(); print("Appended robots")
+    if gamemode == "battle": draw_battle_background(screen, space, map_data, area, area_current)
+    if gamemode == "battle" and debug_physics:        space.debug_draw(draw_options)
+    if gamemode == "battle": draw_battle_units()
     
 
-    if gamemode == "map": draw_map()
-    if gamemode == "battle": draw_battle_background()
 
-
-
+    space.step(1/60)
     load_message()
+    draw_text(f"FPS: {int(clock.get_fps())}", text_font, (255, 255, 255), 20, 20, center=False)
     screen_to_surface()
     clock.tick(60)
 
