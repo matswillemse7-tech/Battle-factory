@@ -219,7 +219,7 @@ def append_robots():
     global battle_robots
     battle_robots = []
     for robot in robots:
-        battle_robots.append([200, 500, robot[3], 10, 10])#x0, y1, inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6), hp3, maxhp4
+        battle_robots.append([200, 500, robot[3], 10, 10, "ragdolled", 180])#x0, y1, inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6), hp3, maxhp4, status5, statusduration6
 
 
 
@@ -227,21 +227,66 @@ def append_robots():
 def draw_battle_units():
     global battle_robots
     if first_time_load:
-        for robot in battle_robots:
+        for j, robot in enumerate(battle_robots):
             print(robot)
-            add_ragdoll(space,(300,300), 1)
+            add_ragdoll(space,(300,300), j)
     for i, shape in enumerate(space.shapes):
         if hasattr(shape, 'part'):
             if shape.part == 'head':
-                draw_image_standerd(head1_IMG, shape.body.position.x, shape.body.position.y, math.degrees(shape.body.angle), 24)
+                draw_image_standerd(head1_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle), 24)
+                if battle_robots[shape.robot][5] != "ragdolled":  shape.body.apply_force_at_world_point((0, -shape.body.mass * 8000), (shape.body.position.x, shape.body.position.y))
+                if battle_robots[shape.robot][5] == "getting_up": shape.body.apply_force_at_world_point((0, -shape.body.mass * 4000), (shape.body.position.x, shape.body.position.y))
+                if battle_robots[shape.robot][5] == "moving left" or battle_robots[shape.robot][5] == "moving right": shape.body.apply_force_at_world_point((0, -shape.body.mass * 1500), (shape.body.position.x, shape.body.position.y))
             if shape.part == 'leg':
-                draw_image_standerd(leg1_IMG, shape.body.position.x, shape.body.position.y, math.degrees(shape.body.angle), 16)
+                draw_image_standerd(leg1_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle), 20)
+                for constraint in space.constraints:
+                    if isinstance(constraint, pymunk.DampedRotarySpring) and (constraint.a == shape.body or constraint.b == shape.body):
+                        if battle_robots[shape.robot][5] == "moving left": constraint.rest_angle = math.radians(int(math.sin(count/10+3-i*1.5)*45));shape.body.apply_force_at_world_point((0, +8000*math.radians(int(math.cos(count/10+3-i*1.5)*45))), (shape.body.position.x, shape.body.position.y))
+                        if battle_robots[shape.robot][5] == "moving right": constraint.rest_angle = math.radians(int(math.sin(-count/10-3+i*1.5)*45));shape.body.apply_force_at_world_point((0, +8000*math.radians(int(math.cos(-count/10-3+i*1.5)*45))), (shape.body.position.x, shape.body.position.y))
+                        if battle_robots[shape.robot][5] == "moving left" or battle_robots[shape.robot][5] == "moving right": constraint.stiffness = 200000
+                        else: constraint.stiffness = 70000
             if shape.part == 'body':
-                draw_image_standerd(body1_IMG, shape.body.position.x, shape.body.position.y, math.degrees(shape.body.angle), 24)
+                draw_image_standerd(body1_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle), 24)
+                battle_robots[shape.robot][0] = shape.body.position.x
+                battle_robots[shape.robot][1] = shape.body.position.y
+                #if battle_robots[shape.robot][5] == "moving left": shape.body.apply_force_at_world_point((-shape.body.mass * 80, 0), (shape.body.position.x, shape.body.position.y))
+                #if battle_robots[shape.robot][5] == "moving right": shape.body.apply_force_at_world_point((shape.body.mass * 80, 0), (shape.body.position.x, shape.body.position.y))
             if shape.part == 'arm':
-                draw_image_standerd(arm1_IMG, shape.body.position.x, shape.body.position.y, math.degrees(shape.body.angle), 16)
+                draw_image_standerd(arm1_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle)-90, 20)
        
+
+def manage_robot_status():
+    global battle_robots
+    for robot in battle_robots:
+        if robot[5] == "ragdolled":
+            robot[6]-=1
+            if robot[6] <=0:
+                robot[5] = "getting_up"
+                robot[6] = 30  
+        if robot[5] == "getting_up":
+            robot[6]-=1
+            if robot[6] <=0:
+                robot[5] = "standing"
+                robot[6] = 10  
+        if robot[5] == "moving left" or robot[5] == "moving right":
+            robot[6]-=1
+            if robot[6] <=0:
+                robot[5] = "standing"
+                robot[6] = 10
             
+
+
+def temp_wasd_robot():
+    global battle_robots
+    if len(battle_robots) > 0:
+        robot = battle_robots[0]
+        if robot[5] != "ragdolled":
+            if pygame.key.get_pressed()[pygame.K_a]:
+                robot[5] = "moving left"
+                robot[6] = 10
+            if pygame.key.get_pressed()[pygame.K_d]:
+                robot[5] = "moving right"
+                robot[6] = 10  
         
 
 
@@ -288,7 +333,7 @@ running = 1
 space = pymunk.Space()
 space.gravity = (0.0, 900)
 draw_options = pymunk.pygame_util.DrawOptions(screen)
-debug_physics = True
+debug_physics = False
 
 while running:
     count +=1
@@ -310,9 +355,11 @@ while running:
 
     if gamemode == "battle" and first_time_load and count == 0: append_robots(); print("Appended robots")
     if gamemode == "battle": draw_battle_background(screen, space, map_data, area, area_current)
-    if gamemode == "battle" and debug_physics:        space.debug_draw(draw_options)
+    if gamemode == "battle" and debug_physics: space.debug_draw(draw_options)
     if gamemode == "battle": draw_battle_units()
-    
+    if gamemode == "battle": manage_robot_status()
+    if gamemode == "battle": temp_wasd_robot()
+
 
 
     space.step(1/60)
