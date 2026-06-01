@@ -202,6 +202,11 @@ def draw_progress():
     if len(robots) > 0 and counter/len(robots) == 1:
         gamemode = "map"
 
+def begin_space():
+    global space
+    space = pymunk.Space()
+    space.gravity = (0.0, 900)
+    space.on_collision(1, 2, begin=on_robot_enemy_collision)
 
 def draw_map():
     global gamemode, area, area_current, first_time_load, count
@@ -219,15 +224,15 @@ def draw_map():
             count = 0
 
 def check_bounds():
-    global battle_robots, space, first_time_load
+    global battle_robots, space, first_time_load, area_current, enemies
     for robot in battle_robots:
-        print(robot[0])
-        if robot[0] > 1900:
+        if robot[0] > 1880:
             first_time_load = True
             area_current +=1
             for robot in battle_robots:
-                robot[5] = "ragdolled"; robot[6] = 60
-            space = pymunk.Space()
+                robot[5] = "ragdolled"; robot[6] = 100
+            begin_space()
+            enemies = []
 
 
 def append_robots():
@@ -240,15 +245,18 @@ def spawn_enemies():
     global enemies
     if enemy_spawn[area][area_current] != [0]:
         for i, spawner in enumerate(enemy_spawn[area][area_current]):
-            enemies.append([spawner[0], spawner[2]*40+36, spawner[1]*40+20, 10, 10])#type0, x1, y2, hp3, maxhp4 warning x and y not calibrated yet 
+            enemies.append([spawner[0], spawner[1]*40+36, spawner[2]*40+20, 10, "inactive", 80, 0])#type0, x1, y2, hp3, status4, statusduration5, target6
             if spawner[0] == "basic_machine":
                 head = pymunk.Body(10, 100)
                 head.position = (enemies[i][1], enemies[i][2])
-                head_shape = pymunk.Circle(head, 24)
+                head_shape = pymunk.Poly(head, [(12*math.cos(2*math.pi*i/8), 12*math.sin(2*math.pi*i/8)) for i in range(8)])
                 head_shape.friction = 1
                 head_shape.filter = pymunk.ShapeFilter(group=2)
                 head_shape.part = 'basic_machine_head'
                 head_shape.enemy = i
+                head_shape.collision_type = 2
+                head_shape.body.apply_force_at_world_point((-head_shape.body.mass * random.randint(-1000, 1000), 0), (head_shape.body.position.x, head_shape.body.position.y))
+                space.add(head, head_shape)
 
     
 
@@ -256,8 +264,13 @@ def spawn_enemies():
 def draw_battle_units():
     global battle_robots
     if first_time_load:
-        for j, robot in enumerate(battle_robots):
-            add_ragdoll(space,(300+random.randint(-100,100),300), j)
+        if count == 0:
+            for j, robot in enumerate(battle_robots):
+                add_ragdoll(space,(300+random.randint(-100,100),300), j)
+        else:
+            for j, robot in enumerate(battle_robots):
+                add_ragdoll(space,(300+random.randint(-100,100),600), j)
+
     for i, shape in enumerate(space.shapes):
         if hasattr(shape, 'part'):
             if shape.part == 'head':
@@ -277,13 +290,51 @@ def draw_battle_units():
                 draw_image_standerd(body1_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle), 24)
                 battle_robots[shape.robot][0] = shape.body.position.x
                 battle_robots[shape.robot][1] = shape.body.position.y
-                #if battle_robots[shape.robot][5] == "moving left": shape.body.apply_force_at_world_point((-shape.body.mass * 80, 0), (shape.body.position.x, shape.body.position.y))
-                #if battle_robots[shape.robot][5] == "moving right": shape.body.apply_force_at_world_point((shape.body.mass * 80, 0), (shape.body.position.x, shape.body.position.y))
+                if battle_robots[shape.robot][5] == "turbo right": shape.body.apply_force_at_world_point((shape.body.mass * 8000, 0), (shape.body.position.x, shape.body.position.y))
             if shape.part == 'arm':
                 draw_image_standerd(arm1_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle)-90, 20)
             if shape.part == 'basic_machine_head':
                 draw_image_standerd(basic_machine_head_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle), 24)
-       
+                enemies[shape.enemy][1] = shape.body.position.x
+                enemies[shape.enemy][2] = shape.body.position.y
+def manage_enemies():
+    global enemies
+    if enemies != []:
+        for i, enemy in enumerate(enemies):
+            if enemy[4] == "inactive" and enemy[5]> 0:
+                enemy[5] -=1
+            elif enemy[4] == "inactive":
+
+                distance_closest = 10000000; closest_robot = 0
+                for j, robot in enumerate(battle_robots):
+                    if robot[0]**2+robot[1]**2 <distance_closest:
+                        distance_closest =robot[0]**2+robot[1]**2
+                        closest_robot = j
+
+                if enemy[0] == "basic_machine":
+                    if distance_closest<100000:
+                        enemy[4] = "active"; enemy[5] = 120; enemy[6]=closest_robot
+
+
+
+            if enemy[4] == "active":
+                if enemy[5] > 0:
+                    enemy[5]-1
+                else:
+                    distance_closest = 10000000; closest_robot = 0
+                for j, robot in enumerate(battle_robots):
+                    if robot[0]**2+robot[1]**2 <distance_closest:
+                        distance_closest =robot[0]**2+robot[1]**2
+                        closest_robot = j
+
+                if enemy[0] == "basic_machine":
+                    
+
+                    if distance_closest>100000:
+                        enemy[4] = "inactive"; enemy[5] = 60
+                
+
+
 
 def manage_robot_status():
     global battle_robots
@@ -316,10 +367,23 @@ def temp_wasd_robot():
                     robot[6] = 10
                 if pygame.key.get_pressed()[pygame.K_d]:
                     robot[5] = "moving right"
+                    robot[6] = 10 
+                if pygame.key.get_pressed()[pygame.K_k]:
+                    robot[5] = "turbo right"
                     robot[6] = 10  
         
 
+def on_robot_enemy_collision(arbiter, space, data):
+    robot_shape, enemy_shape = arbiter.shapes
+    if robot_shape.collision_type != 1:
+        robot_shape, enemy_shape = enemy_shape, robot_shape
+    robot_index = getattr(robot_shape, "robot", None)
+    enemy_index = getattr(enemy_shape, "enemy", None)
+    print("Collision:", robot_index, enemy_index)
+    return True
 
+
+    
 
 GRID_WIDTH = 21
 GRID_HEIGHT = 21
@@ -362,8 +426,7 @@ grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 
 grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 running = 1
 
-space = pymunk.Space()
-space.gravity = (0.0, 900)
+begin_space()
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 debug_physics = False
 
@@ -393,8 +456,8 @@ while running:
     if gamemode == "battle": draw_battle_units()
     if gamemode == "battle": manage_robot_status()
     if gamemode == "battle": temp_wasd_robot()
+    if gamemode == "battle": manage_enemies()
    
-
 
 
     space.step(1/60)

@@ -64,6 +64,14 @@ def add_ragdoll(space, position=(300, 300), number =1):
     right_arm_shape.part = 'arm'
     right_arm_shape.robot = number
 
+    torso_shape.collision_type = 1
+    head_shape.collision_type = 1
+    left_leg_shape.collision_type = 1
+    right_leg_shape.collision_type = 1
+    left_arm_shape.collision_type = 1
+    right_arm_shape.collision_type = 1
+
+
 
     # Joints: head to torso, legs to torso
     headjoint = pymunk.PivotJoint(head, torso, (0, 12), (0, -12))
