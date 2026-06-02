@@ -29,6 +29,7 @@ head1_IMG = pygame.image.load("graphics/head1.png").convert_alpha()
 leg1_IMG = pygame.image.load("graphics/leg1.png").convert_alpha()
 body1_IMG = pygame.image.load("graphics/body1.png").convert_alpha()
 arm1_IMG = pygame.image.load("graphics/arm1.png").convert_alpha()
+swipe_IMG = pygame.image.load("graphics/swipe.png").convert_alpha()
 basic_machine_head_IMG = pygame.image.load("graphics/basic_machine_head.png").convert_alpha()
 
 space_ship_map_IMG = pygame.image.load("graphics/Space_ship_map.png").convert_alpha()
@@ -44,7 +45,7 @@ enemy_spawn = enemy_spawn_get()
 
 x,y =0,0
 gamemode = "factory"
-messages = [];robots = [];items = []; area = ""; area_current = 0; enemies = []
+messages = [];robots = [];items = []; area = ""; area_current = 0; enemies = [];attacks = []
 def draw_image_fast(surface, x, y, angle):
     if angle != 0:
         rotated_surface = pygame.transform.rotate(surface, angle)
@@ -206,7 +207,7 @@ def begin_space():
     global space
     space = pymunk.Space()
     space.gravity = (0.0, 900)
-    space.on_collision(1, 2, begin=on_robot_enemy_collision)
+
 
 def draw_map():
     global gamemode, area, area_current, first_time_load, count
@@ -224,15 +225,16 @@ def draw_map():
             count = 0
 
 def check_bounds():
-    global battle_robots, space, first_time_load, area_current, enemies
+    global battle_robots, space, first_time_load, area_current, enemies, attacks
     for robot in battle_robots:
         if robot[0] > 1880:
             first_time_load = True
             area_current +=1
             for robot in battle_robots:
-                robot[5] = "ragdolled"; robot[6] = 100
+                robot[5] = "ragdolled"; robot[6] = 30
             begin_space()
             enemies = []
+            attacks = []
 
 
 def append_robots():
@@ -245,7 +247,7 @@ def spawn_enemies():
     global enemies
     if enemy_spawn[area][area_current] != [0]:
         for i, spawner in enumerate(enemy_spawn[area][area_current]):
-            enemies.append([spawner[0], spawner[1]*40+36, spawner[2]*40+20, 10, "inactive", 80, 0])#type0, x1, y2, hp3, status4, statusduration5, target6
+            enemies.append([spawner[0], spawner[1]*40+36, spawner[2]*40+20, 10, "inactive", 80, 0, 500, 100, 0])#type0, x1, y2, hp3, status4, statusduration5, target6, activation range7(not squared), weapon range8(not squared), attack cooldown9
             if spawner[0] == "basic_machine":
                 head = pymunk.Body(10, 100)
                 head.position = (enemies[i][1], enemies[i][2])
@@ -299,41 +301,95 @@ def draw_battle_units():
                 enemies[shape.enemy][2] = shape.body.position.y
 def manage_enemies():
     global enemies
+    remove_enemies = []
     if enemies != []:
         for i, enemy in enumerate(enemies):
+            
+            if enemy[9] > 0:
+                enemy[9]-=1
+            if enemy[3] <= 0:
+                remove_enemies.append(i)
+                continue
+
+
             if enemy[4] == "inactive" and enemy[5]> 0:
                 enemy[5] -=1
             elif enemy[4] == "inactive":
 
                 distance_closest = 10000000; closest_robot = 0
                 for j, robot in enumerate(battle_robots):
-                    if robot[0]**2+robot[1]**2 <distance_closest:
-                        distance_closest =robot[0]**2+robot[1]**2
+                    dx = robot[0] - enemy[1]
+                    dy = robot[1] - enemy[2]
+                    if dx**2+dy**2 <distance_closest:
+                        distance_closest =dx**2+dy**2
                         closest_robot = j
+                if distance_closest<enemy[7]**2:
+                    enemy[4] = "active"; enemy[5] = 120; enemy[6]=closest_robot; enemy[9] = 30
+            
 
-                if enemy[0] == "basic_machine":
-                    if distance_closest<100000:
-                        enemy[4] = "active"; enemy[5] = 120; enemy[6]=closest_robot
 
 
 
             if enemy[4] == "active":
                 if enemy[5] > 0:
                     enemy[5]-1
-                else:
-                    distance_closest = 10000000; closest_robot = 0
-                for j, robot in enumerate(battle_robots):
-                    if robot[0]**2+robot[1]**2 <distance_closest:
-                        distance_closest =robot[0]**2+robot[1]**2
-                        closest_robot = j
+                robot = battle_robots[enemy[6]]
+                dx = robot[0] - enemy[1]
+                dy = robot[1] - enemy[2]
 
-                if enemy[0] == "basic_machine":
-                    
+                distance_closest =dx**2+dy**2
 
-                    if distance_closest>100000:
-                        enemy[4] = "inactive"; enemy[5] = 60
-                
+                if enemy[9] == 0:
+                    if enemy[8]**2 > distance_closest:
+                        enemy_attack(enemy, robot, i)
 
+                if distance_closest>enemy[7]**2:
+                    enemy[4] = "inactive"; enemy[5] = 60
+def enemy_attack(enemy, robot, i):
+    global attacks, enemies
+    if enemy[0] == "basic_machine":
+        dx = robot[0] - enemy[1]
+        dy = robot[1] - enemy[2]
+        tangent = math.atan2(dy, dx)
+        attacks.append([enemy[1], enemy[2], tangent, 1, "swipe", 30, "enemy"])#x0, y1, direction2, speed3, type4, duration5, team6,
+        enemies[i][9] = 60
+
+def manage_attacks():
+    global attacks, battle_robots, enemies
+    remove_attacks = []
+
+    for i, attack in enumerate(attacks):
+
+        if attack[4] == "swipe":
+                attack[0] += (math.cos(attack[2]) * (5-(7-attack[5]*0.25)))*0.5
+                attack[1] += (math.sin(attack[2]) * (5-(7-attack[5]*0.25)))*0.5
+                if attack[6] == "enemy":
+                    for j, robot in enumerate(battle_robots):
+                        dx = robot[0] - attack[0]
+                        dy = robot[1] - attack[1]
+                        if dx**2 + dy**2 < 20**2:
+                            battle_robots[j][3]-=attack[3]
+                            remove_attacks.append(i)
+                            messages.append(["Robot hit!", 60])
+                            break
+                if attack[6] == "player":
+                    for j, enemy in enumerate(enemies):
+                        dx = enemy[1] - attack[0]
+                        dy = enemy[2] - attack[1]
+                        if dx**2 + dy**2 < 20**2:
+                            enemies[j][3]-=attack[3]
+                            remove_attacks.append(i)
+                            break
+        attack[5]-=1
+        if attack[5] <=0: remove_attacks.append(i)
+        for i in sorted(remove_attacks, reverse=True):
+            attacks.pop(i)
+
+def draw_attacks():
+    global attacks
+    for attack in attacks:
+        if attack[4] == "swipe":
+            draw_image_standerd(swipe_IMG, attack[0], attack[1], -math.degrees(attack[2])+180, 32)
 
 
 def manage_robot_status():
@@ -373,14 +429,7 @@ def temp_wasd_robot():
                     robot[6] = 10  
         
 
-def on_robot_enemy_collision(arbiter, space, data):
-    robot_shape, enemy_shape = arbiter.shapes
-    if robot_shape.collision_type != 1:
-        robot_shape, enemy_shape = enemy_shape, robot_shape
-    robot_index = getattr(robot_shape, "robot", None)
-    enemy_index = getattr(enemy_shape, "enemy", None)
-    print("Collision:", robot_index, enemy_index)
-    return True
+
 
 
     
@@ -457,6 +506,8 @@ while running:
     if gamemode == "battle": manage_robot_status()
     if gamemode == "battle": temp_wasd_robot()
     if gamemode == "battle": manage_enemies()
+    if gamemode == "battle": manage_attacks()
+    if gamemode == "battle": draw_attacks()
    
 
 
