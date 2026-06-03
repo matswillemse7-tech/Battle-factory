@@ -175,25 +175,94 @@ def draw_factory():
                     pygame.draw.rect(screen, (0, 0, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE+18, 20, 5))
 def draw_inventory():
     pass
+
+def draw_tooltip_with_box(text, x, y, font, text_color=(238, 251, 255), box_color=(65, 64, 64), border_color=(36, 35, 36), max_width=400, padding=10, border_width=20):
+    words = text.split()
+    lines = []
+    current_line = []
+    
+    for word in words:
+        test_line = " ".join(current_line + [word])
+        test_surface = font.render(test_line, True, text_color)
+        if test_surface.get_width() > max_width:
+            if current_line:
+                lines.append(" ".join(current_line))
+                current_line = [word]
+            else:
+                lines.append(word)
+        else:
+            current_line.append(word)
+    
+    if current_line:
+        lines.append(" ".join(current_line))
+    
+    rendered_lines = [font.render(line, True, text_color) for line in lines]
+    
+    box_width = max(surface.get_width() for surface in rendered_lines) + padding * 2
+    
+    line_height = font.get_height()
+    box_height = len(rendered_lines) * line_height + padding * 2
+    
+    box_x = x - box_width // 2
+    box_y = y
+    
+    if box_x < 0:
+        box_x = 0
+    elif box_x + box_width > width:
+        box_x = width - box_width
+    
+    if box_y + box_height > height:
+        box_y = y - box_height - 10
+    
+    border_rect = pygame.Rect(box_x - border_width, box_y - border_width, box_width + border_width * 2, box_height + border_width * 2)
+    pygame.draw.rect(screen, border_color, border_rect, border_radius=5)
+    
+    box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
+    pygame.draw.rect(screen, box_color, box_rect, border_radius=5)
+    
+    for i, rendered_line in enumerate(rendered_lines):
+        line_y = box_y + padding + i * line_height
+        line_x = box_x + padding
+        screen.blit(rendered_line, (line_x, line_y))
+def draw_tile_tooltip(r, c):
+    if grid[r][c] != -1:
+        tile = grid_id[grid[r][c]][0]
+        if tile == "robot_spawner":
+            draw_tooltip_with_box("Spawns robots", 1675, 400, text_font)
+        elif tile == "robot_exit":
+            draw_tooltip_with_box("Robots exit here", 1675, 400, text_font)
+        elif tile == "item_giver":
+            draw_tooltip_with_box("Gives robots equipement", 1675, 400, text_font)
+        elif tile == "tree_harvester":
+            draw_tooltip_with_box(f"Harvests trees every {millify3(grid_id[grid[r][c]][4]/60)} seconds", 1675, 400, text_font)
+        elif tile == "basic_crafter":
+            draw_tooltip_with_box(f"Crafts items every {millify3((grid_id[grid[r][c]][5][0][2]/grid_id[grid[r][c]][3])/60)} secconds", 1675, 400, text_font)
+
 def draw_tooltips():
     global mouse_x, mouse_y
+    if not hasattr(draw_tooltips, "locked"):
+        draw_tooltips.locked = None
+
+    if pygame.mouse.get_pressed()[0]:
+        cx, cy = mouse_x, mouse_y
+        col = int((cx - (width/2-overlay_WIDTH/2)) / TILE_SIZE)
+        row = int((cy - 65) / TILE_SIZE)
+        if 0 <= row < GRID_HEIGHT and 0 <= col < GRID_WIDTH and grid[row][col] != -1:
+            draw_tooltips.locked = (row, col)
+        else:
+            draw_tooltips.locked = None
+
+    if draw_tooltips.locked is not None:
+        r, c = draw_tooltips.locked
+        draw_tile_tooltip(r, c)
+        return
+
     for r in range(GRID_HEIGHT):
         for c in range(GRID_WIDTH):
             if grid[r][c] != -1:
                 rect = pygame.Rect(width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3)
                 if rect.collidepoint(mouse_x, mouse_y):
-                    if grid_id[grid[r][c]][0] == "robot_spawner":
-                        draw_text("Spawns robots", text_font, (255, 255, 255), mouse_x, mouse_y-20)
-                    elif grid_id[grid[r][c]][0] == "robot_exit":
-                        draw_text("Robots exit here", text_font, (255, 255, 255), mouse_x, mouse_y-20)
-                    elif grid_id[grid[r][c]][0] == "item_giver":
-                        if grid_id[grid[r][c]][2] == 0:
-                            draw_text("Gives robots equipement", text_font, (255, 255, 255), mouse_x, mouse_y-20)
-
-                    elif grid_id[grid[r][c]][0] == "tree_harvester":
-                        draw_text(f"Harvests trees every {millify3(grid_id[grid[r][c]][4]/60)} seconds", text_font, (255, 255, 255), mouse_x, mouse_y-20)
-                    elif grid_id[grid[r][c]][0] == "basic_crafter":
-                        draw_text(f"Crafts items {millify3(grid_id[grid[r][c]][5]/60)} secconds", text_font, (255, 255, 255), mouse_x, mouse_y-20)
+                    draw_tile_tooltip(r, c)
 
 def manage_factory():
     global grid, grid_id, items
@@ -584,7 +653,7 @@ grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = dow
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["item_giver", 1, 0])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), robot_gotten2(0 = no, 1 = stuck, 2 = release)
 grid_id.append(["tree_harvester", 2, "harvester", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
-grid_id.append(["basic_crafter", 2, "crafter", 1, 6, [[1,1],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, crafting_tier4, crafting_speed5, recipe6((input_types0.0, output_types0.1), (input_type, input amount) x types, (output type, output amount) x types)
+grid_id.append(["basic_crafter", 2, "crafter", 1, 1, [[1,1, 60],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, crafting_speed4, crafting_tier5, recipe6((input_types0.0, output_types0.1, crafting length), (input_type, input amount) x types, (output type, output amount) x types)
 
 running = 1
 
