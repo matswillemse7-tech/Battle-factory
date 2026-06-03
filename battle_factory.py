@@ -141,7 +141,8 @@ def draw_factory():
                     pygame.draw.rect(screen, (190, 255, 255), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))    
                 elif grid_id[grid[r][c]][0] == "tree_harvester":
                     pygame.draw.rect(screen, (100, 180, 100), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
-                
+                elif grid_id[grid[r][c]][0] == "basic_crafter":
+                    pygame.draw.rect(screen, (180, 140, 100), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
 
 
                 if grid_id[grid[r][c]][1] == 0:
@@ -194,7 +195,7 @@ def move_items():
         elif grid[row][col] != -1 and middle:
             if grid_id[grid[row][col]][0] == "robot_exit":
                 robot[2] = 6; robot[0] = width/2-overlay_WIDTH/2+col*TILE_SIZE+20; robot[1] = 65+row*TILE_SIZE+20
-            if grid_id[grid[row][col]][1] == "item_giver":
+            if grid_id[grid[row][col]][0] == "item_giver":
                 grid[row][col][2]=1
                 robot[0] = width/2-overlay_WIDTH/2+col*TILE_SIZE+20; robot[1] = 65+row*TILE_SIZE+20
                 if robot[3][0] == 0:
@@ -517,7 +518,7 @@ grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = dow
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["item_giver", 1, 0])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), robot_gotten2(0 = no, 1 = stuck, 2 = release)
 grid_id.append(["tree_harvester", 2, "gatherer", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
-grid_id.append(["item_crafter", 2, "crafter", 1, 6, [[1,1],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, crafting_tier4, crafting_speed5, recipe6((input_types0.0, output_types0.1), (input_type, input amount) x types, (output type, output amount) x types)
+grid_id.append(["basic_crafter", 2, "crafter", 1, 6, [[1,1],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, crafting_tier4, crafting_speed5, recipe6((input_types0.0, output_types0.1), (input_type, input amount) x types, (output type, output amount) x types)
 running = 1
 
 begin_space()
