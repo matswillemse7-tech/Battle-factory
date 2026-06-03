@@ -135,9 +135,14 @@ def draw_factory():
             if grid[r][c] != -1:
                 if grid_id[grid[r][c]][0] == "robot_spawner":
                     pygame.draw.rect(screen, (140, 255, 255), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
-                if grid_id[grid[r][c]][0] == "robot_exit":
+                elif grid_id[grid[r][c]][0] == "robot_exit":
                     pygame.draw.rect(screen, (255, 180, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
-                
+                elif grid_id[grid[r][c]][0] == "item_giver":
+                    pygame.draw.rect(screen, (190, 255, 255), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))    
+                elif grid_id[grid[r][c]][0] == "tree_harvester":
+                    pygame.draw.rect(screen, (100, 180, 100), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
+                elif grid_id[grid[r][c]][0] == "basic_crafter":
+                    pygame.draw.rect(screen, (180, 140, 100), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
 
 
                 if grid_id[grid[r][c]][1] == 0:
@@ -151,9 +156,18 @@ def draw_factory():
 
 def draw_inventory():
     pass
-
+def manage_factory():
+    for r in range(GRID_HEIGHT):
+        for c in range(GRID_WIDTH):
+            if grid[r][c] != -1:
+                if grid_id[grid[r][c]][2] == "harvester":
+                    if grid_id[grid[r][c]][3] > 0:
+                        grid_id[grid[r][c]][3]-=1
+                    else:
+                        grid_id[grid[r][c]][3] = grid_id[grid[r][c]][4]
+                        items.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][5], grid_id[grid[r][c]][6]])#x, y, type, amount
 def move_items():
-    global items, robots
+    global items, robots, grid, grid_id
     if count == 0:
         robots = []
         for r in range(GRID_HEIGHT):
@@ -161,24 +175,39 @@ def move_items():
                 if grid[r][c] != -1:
                     if grid_id[grid[r][c]][0] == "robot_spawner":
                         robots.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][1], [0,0,0,0,0,0,0]])#x0, y1, direction2, 3inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6)
-    for item in robots:
-        row = int((item[1]-65)/TILE_SIZE)
-        col = int((item[0]-(width/2-overlay_WIDTH/2))/TILE_SIZE)
+    for robot in robots:
+        row = int((robot[1]-65)/TILE_SIZE)
+        col = int((robot[0]-(width/2-overlay_WIDTH/2))/TILE_SIZE)
+        middle = False
+
+        if (row >= 0 and row < GRID_HEIGHT) and (col >= 0 and col < GRID_WIDTH):
+            center_x = width/2 - overlay_WIDTH/2 + col * TILE_SIZE + TILE_SIZE/2
+            center_y = 65 + row * TILE_SIZE + TILE_SIZE/2
+            if abs(robot[0] - center_x) <= 6 and abs(robot[1] - center_y) <= 6:
+                middle = True
+
+
         if not (row >= 0 and row < GRID_HEIGHT and col >= 0 and col < GRID_WIDTH):
             add_message("Robot escaped the factory!")
-            robots.remove(item)
-        elif grid[row][col] != -1:
+            robot[2] = 6
+
+
+        elif grid[row][col] != -1 and middle:
             if grid_id[grid[row][col]][0] == "robot_exit":
-                item[2] = 6; item[0] = width/2-overlay_WIDTH/2+col*TILE_SIZE+20; item[1] = 65+row*TILE_SIZE+20
-        
-        if item[2] == 0:
-            item[1]-=0.3
-        if item[2] == 2:
-            item[1]+=0.3
-        if item[2] == 1:
-            item[0]+=0.3
-        if item[2] == 3:
-            item[0]-=0.3
+                robot[2] = 6; robot[0] = width/2-overlay_WIDTH/2+col*TILE_SIZE+20; robot[1] = 65+row*TILE_SIZE+20
+            if grid_id[grid[row][col]][0] == "item_giver":
+                grid[row][col][2]=1
+                robot[0] = width/2-overlay_WIDTH/2+col*TILE_SIZE+20; robot[1] = 65+row*TILE_SIZE+20
+                if robot[3][0] == 0:
+                    robot[3][0] = 1
+        if robot[2] == 0:
+            robot[1]-=0.3
+        if robot[2] == 2:
+            robot[1]+=0.3
+        if robot[2] == 1:
+            robot[0]+=0.3
+        if robot[2] == 3:
+            robot[0]-=0.3
 
 def draw_items():
     for item in items:
@@ -241,7 +270,7 @@ def append_robots():
     global battle_robots
     battle_robots = []
     for robot in robots:
-        battle_robots.append([200, 500, robot[3], 10, 10, "ragdolled", 180])#x0, y1, inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6), hp3, maxhp4, status5, statusduration6
+        battle_robots.append([200, 500, robot[3], 10, 10, "ragdolled", 180, 0])#x0, y1, inventory(weapon0, ammo1, weapon2, ammo3, head4, body5, legs6), hp3, maxhp4, status5, statusduration6, feet_touching_ground7
     
 def spawn_enemies():
     global enemies
@@ -273,6 +302,10 @@ def draw_battle_units():
             for j, robot in enumerate(battle_robots):
                 add_ragdoll(space,(300+random.randint(-100,100),600), j)
 
+    for robot in battle_robots:
+        robot[7] = 0
+
+
     for i, shape in enumerate(space.shapes):
         if hasattr(shape, 'part'):
             if shape.part == 'head':
@@ -282,6 +315,7 @@ def draw_battle_units():
                 if battle_robots[shape.robot][5] == "moving left" or battle_robots[shape.robot][5] == "moving right": shape.body.apply_force_at_world_point((0, -shape.body.mass * 1500), (shape.body.position.x, shape.body.position.y))
             if shape.part == 'leg':
                 draw_image_standerd(leg1_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle), 20)
+                if any(shape.body.each_arbiter(lambda arb: True) or []): battle_robots[shape.robot][7] += 1
                 for constraint in space.constraints:
                     if isinstance(constraint, pymunk.DampedRotarySpring) and (constraint.a == shape.body or constraint.b == shape.body):
                         if battle_robots[shape.robot][5] == "moving left": constraint.rest_angle = math.radians(int(math.sin(count/10+3-i*1.5)*45));shape.body.apply_force_at_world_point((0, +8000*math.radians(int(math.cos(count/10+3-i*1.5)*45))), (shape.body.position.x, shape.body.position.y))
@@ -293,6 +327,7 @@ def draw_battle_units():
                 battle_robots[shape.robot][0] = shape.body.position.x
                 battle_robots[shape.robot][1] = shape.body.position.y
                 if battle_robots[shape.robot][5] == "turbo right": shape.body.apply_force_at_world_point((shape.body.mass * 8000, 0), (shape.body.position.x, shape.body.position.y))
+                if battle_robots[shape.robot][5] == "jump": shape.body.apply_impulse_at_world_point((0,shape.body.mass * 4000), (shape.body.position.x, shape.body.position.y))
             if shape.part == 'arm':
                 draw_image_standerd(arm1_IMG, shape.body.position.x, shape.body.position.y, -math.degrees(shape.body.angle)-90, 20)
             if shape.part == 'basic_machine_head':
@@ -427,6 +462,11 @@ def temp_wasd_robot():
                 if pygame.key.get_pressed()[pygame.K_k]:
                     robot[5] = "turbo right"
                     robot[6] = 10  
+                if pygame.key.get_pressed()[pygame.K_w]:
+                    print(robot[7])
+                    if robot[7] > 0:
+                        robot[5] = "jump"
+                        robot[6] = 10 
         
 
 
@@ -465,14 +505,20 @@ while running:
 
 
 grid[10][18] = 0
+grid[10][19] = 2
 grid[10][20] = 1
+grid[8][19] = 3
+grid[9][19] = 4
+
 
 
 
 grid_id = []
 grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
-grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
+grid_id.append(["item_giver", 1, 0])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), robot_gotten2(0 = no, 1 = stuck, 2 = release)
+grid_id.append(["tree_harvester", 2, "gatherer", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
+grid_id.append(["basic_crafter", 2, "crafter", 1, 6, [[1,1],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, crafting_tier4, crafting_speed5, recipe6((input_types0.0, output_types0.1), (input_type, input amount) x types, (output type, output amount) x types)
 running = 1
 
 begin_space()
@@ -492,6 +538,7 @@ while running:
     if gamemode == "factory" or gamemode == "factory_go" :draw_factory()
 
     if gamemode == "factory": draw_inventory()
+    if gamemode == "factory_go": manage_factory()
     if gamemode == "factory_go": move_items()
     if gamemode == "factory_go": draw_items()
     if gamemode == "factory_go": draw_progress()

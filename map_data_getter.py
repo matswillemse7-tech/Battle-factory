@@ -20,6 +20,5 @@ def enemy_spawn_get():
     enemy_spawn[0][0] = [0]
     enemy_spawn[0][1] = [["basic_machine", 20, 14],["basic_machine", 37, 15],["basic_machine", 40, 15]]
     enemy_spawn[0][2] = [0]
-
     
     return enemy_spawn
