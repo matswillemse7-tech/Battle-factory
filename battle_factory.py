@@ -157,10 +157,11 @@ def draw_factory():
 def draw_inventory():
     pass
 def manage_factory():
+    global grid, grid_id, items
     for r in range(GRID_HEIGHT):
         for c in range(GRID_WIDTH):
             if grid[r][c] != -1:
-                if grid_id[grid[r][c]][2] == "harvester":
+                if len(grid_id[grid[r][c]]) > 2 and grid_id[grid[r][c]][2] == "harvester":
                     if grid_id[grid[r][c]][3] > 0:
                         grid_id[grid[r][c]][3]-=1
                     else:
@@ -196,7 +197,7 @@ def move_items():
             if grid_id[grid[row][col]][0] == "robot_exit":
                 robot[2] = 6; robot[0] = width/2-overlay_WIDTH/2+col*TILE_SIZE+20; robot[1] = 65+row*TILE_SIZE+20
             if grid_id[grid[row][col]][0] == "item_giver":
-                grid[row][col][2]=1
+                grid_id[grid[row][col]][2]=1
                 robot[0] = width/2-overlay_WIDTH/2+col*TILE_SIZE+20; robot[1] = 65+row*TILE_SIZE+20
                 if robot[3][0] == 0:
                     robot[3][0] = 1
