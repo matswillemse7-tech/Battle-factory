@@ -28,6 +28,7 @@ robot_IMG = pygame.image.load("graphics/temp_robot.png").convert_alpha()
 head1_IMG = pygame.image.load("graphics/head1.png").convert_alpha()
 leg1_IMG = pygame.image.load("graphics/leg1.png").convert_alpha()
 body1_IMG = pygame.image.load("graphics/body1.png").convert_alpha()
+wood_IMG = pygame.image.load("graphics/wood.png").convert_alpha()
 arm1_IMG = pygame.image.load("graphics/arm1.png").convert_alpha()
 swipe_IMG = pygame.image.load("graphics/swipe.png").convert_alpha()
 basic_machine_head_IMG = pygame.image.load("graphics/basic_machine_head.png").convert_alpha()
@@ -161,14 +162,39 @@ def manage_factory():
     for r in range(GRID_HEIGHT):
         for c in range(GRID_WIDTH):
             if grid[r][c] != -1:
-                if len(grid_id[grid[r][c]]) > 2 and grid_id[grid[r][c]][2] == "harvester":
+                if len(grid_id[grid[r][c]]) > 2 and grid_id[grid[r][c]][2] == "harvester":   
                     if grid_id[grid[r][c]][3] > 0:
                         grid_id[grid[r][c]][3]-=1
                     else:
                         grid_id[grid[r][c]][3] = grid_id[grid[r][c]][4]
-                        items.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][5], grid_id[grid[r][c]][6]])#x, y, type, amount
+                        for i in range(grid_id[grid[r][c]][6]):
+                            items.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][5], [r, c, grid_id[grid[r][c]][1]]])#x0, y1, type2, 3connected block(r,c,dir)
 def move_items():
     global items, robots, grid, grid_id
+    for item in items:
+        middle = False
+        row = item[3][0]
+        col = item[3][1]
+        if item[3][2] == 0: row-=1
+        elif item[3][2] == 2: row+=1
+        elif item[3][2] == 1: col+=1
+        elif item[3][2] == 3: col-=1
+        if (row >= 0 and row < GRID_HEIGHT) and (col >= 0 and col < GRID_WIDTH):
+            center_x = width/2 - overlay_WIDTH/2 + col * TILE_SIZE + TILE_SIZE/2
+            center_y = 65 + row * TILE_SIZE + TILE_SIZE/2
+            if abs(item[0] - center_x) <= 6 and abs(item[1] - center_y) <= 6:
+                middle = True
+        if middle == True:
+            item[3][0] = int((item[1]-65)/TILE_SIZE)
+            item[3][1] = int((item[0]-(width/2-overlay_WIDTH/2))/TILE_SIZE)
+            item[3][2] = grid_id[grid[row][col]][1]
+        if item[3][2] == 0: item[1]-=0.3
+        elif item[3][2] == 2: item[1]+=0.3
+        elif item[3][2] == 1: item[0]+=0.3  
+        elif item[3][2] == 3: item[0]-=0.3
+
+
+
     if count == 0:
         robots = []
         for r in range(GRID_HEIGHT):
@@ -212,7 +238,8 @@ def move_items():
 
 def draw_items():
     for item in items:
-        pygame.draw.circle(screen, (255, 255, 0), (int(item[0]), int(item[1])), 10)
+        if item[2] == "wood": draw_image_standerd(wood_IMG, item[0], item[1], 0, 24)
+        else: pygame.draw.circle(screen, (255, 255, 0), (int(item[0]), int(item[1])), 10)
     for item in robots:
         draw_image_standerd(head1_IMG, item[0]+3, item[1]-16, item[2]*90-90, 16)
         draw_image_standerd(body1_IMG, item[0], item[1]-4, 0, 16)
@@ -518,7 +545,7 @@ grid_id = []
 grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["item_giver", 1, 0])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), robot_gotten2(0 = no, 1 = stuck, 2 = release)
-grid_id.append(["tree_harvester", 2, "gatherer", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
+grid_id.append(["tree_harvester", 2, "harvester", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
 grid_id.append(["basic_crafter", 2, "crafter", 1, 6, [[1,1],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, crafting_tier4, crafting_speed5, recipe6((input_types0.0, output_types0.1), (input_type, input amount) x types, (output type, output amount) x types)
 running = 1
 
