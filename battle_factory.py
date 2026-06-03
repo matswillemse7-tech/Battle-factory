@@ -121,6 +121,26 @@ def draw_rectangle(x, y, width, height, color1, color2, edge = 2, round=0):
     pygame.draw.rect(screen, color2, rect, border_radius = round)
     rect = pygame.Rect(x, y, width, height)
     pygame.draw.rect(screen, color1, rect, border_radius = round)
+def millify3(val):
+    if val == 0:
+        return "0.00"
+    abs_val = abs(val)
+    suffixes = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'Ud', 'Dd', 'Td', 'Qad', 'Qid', 'Sxd', 'Spd', 'Od', 'Nd', 'V', 'Uv', 'Dv', 'Tv', 'Qav', 'Qiv', 'Sxv', 'Spv', 'Ov', 'Nv', 'Tg', 'Ut', 'Dt', 'Tt', 'Qat', 'Qit', 'Sxt', 'Spt', 'Ot', 'Nt', 'Qaa','Uqa', 'Dqa', 'Tqa', 'Qaqa', 'Qiqa', 'Sxqa']
+    try:
+        scale = max(0, min(int(math.log10(abs_val) // 3), len(suffixes) - 1))
+    except OverflowError:
+        return str(val)
+    scaled_val = val / (10 ** (scale * 3))
+    abs_scaled = abs(scaled_val)
+    if abs_scaled >= 100:
+        decimals = 0
+    elif abs_scaled >= 10:
+        decimals = 1
+    else:
+        first_digit_place = math.floor(math.log10(abs_scaled))
+        decimals = 2 - first_digit_place
+
+    return f"{scaled_val:.{decimals}f}{suffixes[scale]}"
 
 
 
@@ -129,7 +149,6 @@ def draw_grid():
         for c in range(GRID_WIDTH):
             color = (50, 50, 50) if grid[r][c] == 1 else (100, 100, 100)
             pygame.draw.rect(screen, color, (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
-
 def draw_factory():
     for r in range(GRID_HEIGHT):
         for c in range(GRID_WIDTH):
@@ -154,9 +173,28 @@ def draw_factory():
                     pygame.draw.rect(screen, (0, 0, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+18, 20, 5))
                 if grid_id[grid[r][c]][1] == 3:
                     pygame.draw.rect(screen, (0, 0, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE+18, 20, 5))
-
 def draw_inventory():
     pass
+def draw_tooltips():
+    global mouse_x, mouse_y
+    for r in range(GRID_HEIGHT):
+        for c in range(GRID_WIDTH):
+            if grid[r][c] != -1:
+                rect = pygame.Rect(width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3)
+                if rect.collidepoint(mouse_x, mouse_y):
+                    if grid_id[grid[r][c]][0] == "robot_spawner":
+                        draw_text("Spawns robots", text_font, (255, 255, 255), mouse_x, mouse_y-20)
+                    elif grid_id[grid[r][c]][0] == "robot_exit":
+                        draw_text("Robots exit here", text_font, (255, 255, 255), mouse_x, mouse_y-20)
+                    elif grid_id[grid[r][c]][0] == "item_giver":
+                        if grid_id[grid[r][c]][2] == 0:
+                            draw_text("Gives robots equipement", text_font, (255, 255, 255), mouse_x, mouse_y-20)
+
+                    elif grid_id[grid[r][c]][0] == "tree_harvester":
+                        draw_text(f"Harvests trees every {millify3(grid_id[grid[r][c]][4]/60)} seconds", text_font, (255, 255, 255), mouse_x, mouse_y-20)
+                    elif grid_id[grid[r][c]][0] == "basic_crafter":
+                        draw_text(f"Crafts items {millify3(grid_id[grid[r][c]][5]/60)} secconds", text_font, (255, 255, 255), mouse_x, mouse_y-20)
+
 def manage_factory():
     global grid, grid_id, items
     for r in range(GRID_HEIGHT):
@@ -547,6 +585,7 @@ grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 
 grid_id.append(["item_giver", 1, 0])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), robot_gotten2(0 = no, 1 = stuck, 2 = release)
 grid_id.append(["tree_harvester", 2, "harvester", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
 grid_id.append(["basic_crafter", 2, "crafter", 1, 6, [[1,1],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, crafting_tier4, crafting_speed5, recipe6((input_types0.0, output_types0.1), (input_type, input amount) x types, (output type, output amount) x types)
+
 running = 1
 
 begin_space()
@@ -566,6 +605,7 @@ while running:
     if gamemode == "factory" or gamemode == "factory_go" :draw_factory()
 
     if gamemode == "factory": draw_inventory()
+    if gamemode == "factory": draw_tooltips()
     if gamemode == "factory_go": manage_factory()
     if gamemode == "factory_go": move_items()
     if gamemode == "factory_go": draw_items()
