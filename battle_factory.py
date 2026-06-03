@@ -137,6 +137,10 @@ def draw_factory():
                     pygame.draw.rect(screen, (140, 255, 255), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
                 if grid_id[grid[r][c]][0] == "robot_exit":
                     pygame.draw.rect(screen, (255, 180, 0), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
+                if grid_id[grid[r][c]][0] == "item_giver":
+                    pygame.draw.rect(screen, (190, 255, 255), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))    
+                if grid_id[grid[r][c]][0] == "tree_harvester":
+                    pygame.draw.rect(screen, (100, 180, 100), (width/2-overlay_WIDTH/2+c*TILE_SIZE, 65+r*TILE_SIZE, TILE_SIZE-3, TILE_SIZE-3))
                 
 
 
@@ -151,7 +155,8 @@ def draw_factory():
 
 def draw_inventory():
     pass
-
+def manage_factory():
+    pass
 def move_items():
     global items, robots
     if count == 0:
@@ -492,6 +497,7 @@ while running:
 grid[10][18] = 0
 grid[10][19] = 2
 grid[10][20] = 1
+grid[10][17] = 3
 
 
 
@@ -500,6 +506,7 @@ grid_id = []
 grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["item_giver", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
+grid_id.append(["tree_harvester", 1, "gatherer", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
 running = 1
 
 begin_space()
@@ -519,6 +526,7 @@ while running:
     if gamemode == "factory" or gamemode == "factory_go" :draw_factory()
 
     if gamemode == "factory": draw_inventory()
+    if gamemode == "factory_go": manage_factory()
     if gamemode == "factory_go": move_items()
     if gamemode == "factory_go": draw_items()
     if gamemode == "factory_go": draw_progress()
