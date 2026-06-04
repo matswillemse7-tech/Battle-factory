@@ -176,7 +176,14 @@ def draw_factory():
 def draw_inventory():
     pass
 
-def draw_tooltip_with_box(text, x, y, font, text_color=(238, 251, 255), box_color=(65, 64, 64), border_color=(36, 35, 36), max_width=400, padding=10, border_width=20):
+
+def recipe_list(crafting_tier):
+    recipes = []
+    if crafting_tier >= 1:
+        recipes.append([["stick", 1, 1, 60],["wood", 1],["stick", 1]])
+        
+
+def draw_tooltip_with_box(text, x, y, font, text_color=(238, 251, 255), box_color=(65, 64, 64), border_color=(36, 35, 36), max_width=400, padding=10, border_width=20, choice = 0, crafter_tier = 0, current_recipe = ""):
     words = text.split()
     lines = []
     current_line = []
@@ -192,14 +199,15 @@ def draw_tooltip_with_box(text, x, y, font, text_color=(238, 251, 255), box_colo
                 lines.append(word)
         else:
             current_line.append(word)
-    
     if current_line:
         lines.append(" ".join(current_line))
-    
+
+    if choice == "choose_recipe":
+        lines.append("current recipe:")
+        lines.append(current_recipe)
+
     rendered_lines = [font.render(line, True, text_color) for line in lines]
-    
     box_width = max(surface.get_width() for surface in rendered_lines) + padding * 2
-    
     line_height = font.get_height()
     box_height = len(rendered_lines) * line_height + padding * 2
     
@@ -210,7 +218,6 @@ def draw_tooltip_with_box(text, x, y, font, text_color=(238, 251, 255), box_colo
         box_x = 0
     elif box_x + box_width > width:
         box_x = width - box_width
-    
     if box_y + box_height > height:
         box_y = y - box_height - 10
     
@@ -224,6 +231,7 @@ def draw_tooltip_with_box(text, x, y, font, text_color=(238, 251, 255), box_colo
         line_y = box_y + padding + i * line_height
         line_x = box_x + padding
         screen.blit(rendered_line, (line_x, line_y))
+
 def draw_tile_tooltip(r, c):
     if grid[r][c] != -1:
         tile = grid_id[grid[r][c]][0]
@@ -236,7 +244,7 @@ def draw_tile_tooltip(r, c):
         elif tile == "tree_harvester":
             draw_tooltip_with_box(f"Harvests trees every {millify3(grid_id[grid[r][c]][4]/60)} seconds", 1675, 400, text_font)
         elif tile == "basic_crafter":
-            draw_tooltip_with_box(f"Crafts items every {millify3((grid_id[grid[r][c]][5][0][2]/grid_id[grid[r][c]][3])/60)} secconds", 1675, 400, text_font)
+            draw_tooltip_with_box(f"Crafts items every {millify3((grid_id[grid[r][c]][5][0][2]/grid_id[grid[r][c]][3])/60)} secconds", 1675, 400, text_font, choice = "choose_recipe", crafter_tier = grid_id[grid[r][c]][7], current_recipe = grid_id[grid[r][c]][5][0][0])
 
 def draw_tooltips():
     global mouse_x, mouse_y
@@ -653,7 +661,7 @@ grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = dow
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["item_giver", 1, 0])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), robot_gotten2(0 = no, 1 = stuck, 2 = release)
 grid_id.append(["tree_harvester", 2, "harvester", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
-grid_id.append(["basic_crafter", 2, "crafter", 1, 1, [[1,1, 60],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, crafting_speed4, crafting_tier5, recipe6((input_types0.0, output_types0.1, crafting length), (input_type, input amount) x types, (output type, output amount) x types)
+grid_id.append(["basic_crafter", 2, "crafter", 1, 1, ["stick", 1,1, 60],["wood", 1], ["stick",1]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, crafting_speed4, crafting_tier5, recipe6((input_types0.0, output_types0.1, crafting length), (input_type, input amount) x types, (output type, output amount) x types)
 
 running = 1
 
