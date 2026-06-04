@@ -244,7 +244,7 @@ def draw_tile_tooltip(r, c):
         elif tile == "tree_harvester":
             draw_tooltip_with_box(f"Harvests trees every {millify3(grid_id[grid[r][c]][4]/60)} seconds", 1675, 400, text_font)
         elif tile == "basic_crafter":
-            draw_tooltip_with_box(f"Crafts items every {millify3((grid_id[grid[r][c]][5][0][2]/grid_id[grid[r][c]][3])/60)} secconds", 1675, 400, text_font, choice = "choose_recipe", crafter_tier = grid_id[grid[r][c]][7], current_recipe = grid_id[grid[r][c]][5][0][0])
+            draw_tooltip_with_box(f"Crafts items every {millify3((grid_id[grid[r][c]][5][0][3]/grid_id[grid[r][c]][3])/60)} secconds", 1675, 400, text_font, choice = "choose_recipe", crafter_tier = grid_id[grid[r][c]][3], current_recipe = grid_id[grid[r][c]][5][0][0])
 
 def draw_tooltips():
     global mouse_x, mouse_y
@@ -648,7 +648,7 @@ while running:
 
 
 grid[10][18] = 0
-grid[10][19] = 2
+#grid[10][19] = 2
 grid[10][20] = 1
 grid[8][19] = 3
 grid[9][19] = 4
@@ -661,7 +661,7 @@ grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = dow
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["item_giver", 1, 0])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), robot_gotten2(0 = no, 1 = stuck, 2 = release)
 grid_id.append(["tree_harvester", 2, "harvester", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
-grid_id.append(["basic_crafter", 2, "crafter", 1, 1, ["stick", 1,1, 60],["wood", 1], ["stick",1]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, crafting_speed4, crafting_tier5, recipe6((input_types0.0, output_types0.1, crafting length), (input_type, input amount) x types, (output type, output amount) x types)
+grid_id.append(["basic_crafter", 2, "crafter", 1, 1, [["stick", 1,1, 60],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, crafting_speed4, crafting_tier5, recipe6((input_types0.0, output_types0.1, crafting length), (input_type, input amount) x types, (output type, output amount) x types)
 
 running = 1
 
