@@ -204,7 +204,7 @@ def draw_tooltip_with_box(text, x, y, font, text_color=(238, 251, 255), box_colo
 
     if choice == "choose_recipe":
         lines.append("current recipe:")
-        lines.append(current_recipe)
+        lines.append(current_recipe[0][0])
 
     rendered_lines = [font.render(line, True, text_color) for line in lines]
     box_width = max(surface.get_width() for surface in rendered_lines) + padding * 2
@@ -244,7 +244,7 @@ def draw_tile_tooltip(r, c):
         elif tile == "tree_harvester":
             draw_tooltip_with_box(f"Harvests trees every {millify3(grid_id[grid[r][c]][4]/60)} seconds", 1675, 400, text_font)
         elif tile == "basic_crafter":
-            draw_tooltip_with_box(f"Crafts items every {millify3((grid_id[grid[r][c]][5][0][3]/grid_id[grid[r][c]][3])/60)} secconds", 1675, 400, text_font, choice = "choose_recipe", crafter_tier = grid_id[grid[r][c]][3], current_recipe = grid_id[grid[r][c]][5][0][0])
+            draw_tooltip_with_box(f"Crafts items every {millify3((grid_id[grid[r][c]][5][0][3]/grid_id[grid[r][c]][3])/60)} secconds", 1675, 400, text_font, choice = "choose_recipe", crafter_tier = grid_id[grid[r][c]][3], current_recipe = grid_id[grid[r][c]][5])
 
 def draw_tooltips():
     global mouse_x, mouse_y
