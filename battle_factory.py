@@ -28,10 +28,12 @@ robot_IMG = pygame.image.load("graphics/temp_robot.png").convert_alpha()
 head1_IMG = pygame.image.load("graphics/head1.png").convert_alpha()
 leg1_IMG = pygame.image.load("graphics/leg1.png").convert_alpha()
 body1_IMG = pygame.image.load("graphics/body1.png").convert_alpha()
-wood_IMG = pygame.image.load("graphics/wood.png").convert_alpha()
 arm1_IMG = pygame.image.load("graphics/arm1.png").convert_alpha()
 swipe_IMG = pygame.image.load("graphics/swipe.png").convert_alpha()
 basic_machine_head_IMG = pygame.image.load("graphics/basic_machine_head.png").convert_alpha()
+
+wood_IMG = pygame.image.load("graphics/wood.png").convert_alpha()
+stick_IMG = pygame.image.load("graphics/stick.png").convert_alpha()
 
 space_ship_map_IMG = pygame.image.load("graphics/Space_ship_map.png").convert_alpha()
 
@@ -277,13 +279,28 @@ def manage_factory():
     for r in range(GRID_HEIGHT):
         for c in range(GRID_WIDTH):
             if grid[r][c] != -1:
-                if len(grid_id[grid[r][c]]) > 2 and grid_id[grid[r][c]][2] == "harvester":   
-                    if grid_id[grid[r][c]][3] > 0:
-                        grid_id[grid[r][c]][3]-=1
-                    else:
-                        grid_id[grid[r][c]][3] = grid_id[grid[r][c]][4]
-                        for i in range(grid_id[grid[r][c]][6]):
-                            items.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][5], [r, c, grid_id[grid[r][c]][1]]])#x0, y1, type2, 3connected block(r,c,dir)
+                tile = grid_id[grid[r][c]]
+                if len(tile) > 2:
+                    if tile[2] == "harvester":   
+                        if tile[3] > 0:
+                            tile[3]-=1
+                        else:
+                            tile[3] =tile[4]
+                            for i in range(tile[6]):
+                                items.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, tile[5], [r, c, tile[1]]])#x0, y1, type2, 3connected block(r,c,dir)
+                    elif tile[2] == "crafter": 
+                        enough = True
+                        for i, amount in enumerate(tile[6][1]):
+                            if tile[5][1][i*2+1] > amount: enough = False
+                        if enough == True:
+                            if tile[6][0] < tile[5][0][3]: tile[6][0] += tile[3]
+                            else: 
+                                tile[6][0] = 0
+                                for i, amount in enumerate(tile[6][1]): tile[6][1][i] -= tile[5][1][i*2+1]
+                                for i in range(tile[5][0][2]*tile[5][2][1]):
+                                    items.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, tile[5][2][0], [r, c, tile[1]]])
+                                
+                            
 def move_items():
     global items, robots, grid, grid_id
     remove_items = []
@@ -367,7 +384,7 @@ def move_items():
 def draw_items():
     for item in items:
         if item[2] == "wood": draw_image_standerd(wood_IMG, item[0], item[1], 0, 24)
-        elif item[2] == "stick": draw_image_standerd(arm1_IMG, item[0], item[1], 0, 12)
+        elif item[2] == "stick": draw_image_standerd(stick_IMG, item[0], item[1], 0, 24)
         else: pygame.draw.circle(screen, (255, 255, 0), (int(item[0]), int(item[1])), 10)
     for item in robots:
         draw_image_standerd(head1_IMG, item[0]+3, item[1]-16, item[2]*90-90, 16)
