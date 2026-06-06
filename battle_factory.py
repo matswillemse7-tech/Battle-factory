@@ -286,6 +286,7 @@ def manage_factory():
                             items.append([width/2-overlay_WIDTH/2+c*TILE_SIZE+20, 65+r*TILE_SIZE+20, grid_id[grid[r][c]][5], [r, c, grid_id[grid[r][c]][1]]])#x0, y1, type2, 3connected block(r,c,dir)
 def move_items():
     global items, robots, grid, grid_id
+    remove_items = []
     for item in items:
         middle = False
         row = item[3][0]
@@ -302,12 +303,24 @@ def move_items():
         if middle == True:
             item[3][0] = int((item[1]-65)/TILE_SIZE)
             item[3][1] = int((item[0]-(width/2-overlay_WIDTH/2))/TILE_SIZE)
-            item[3][2] = grid_id[grid[row][col]][1]
+            if grid[row][col] == -1:item[3][2] = -1
+            else: 
+                if grid_id[grid[row][col]][0] == "basic_crafter" and item[2] in grid_id[grid[row][col]][5][1]:
+                    for i, ingredient in enumerate(grid_id[grid[row][col]][5][1]):
+                        if ingredient == item[2]:
+                            grid_id[grid[row][col]][6][1][int(i/2)] +=1
+                            remove_items.append(item)
+                    
+                    grid_id[grid[row][col]][6][1]
+                else:
+                    item[3][2] = grid_id[grid[row][col]][1]
         if item[3][2] == 0: item[1]-=0.3
         elif item[3][2] == 2: item[1]+=0.3
         elif item[3][2] == 1: item[0]+=0.3  
         elif item[3][2] == 3: item[0]-=0.3
-
+    for item in remove_items:
+        items.remove(item)
+    remove_items.clear()
 
 
     if count == 0:
@@ -354,6 +367,7 @@ def move_items():
 def draw_items():
     for item in items:
         if item[2] == "wood": draw_image_standerd(wood_IMG, item[0], item[1], 0, 24)
+        elif item[2] == "stick": draw_image_standerd(arm1_IMG, item[0], item[1], 0, 12)
         else: pygame.draw.circle(screen, (255, 255, 0), (int(item[0]), int(item[1])), 10)
     for item in robots:
         draw_image_standerd(head1_IMG, item[0]+3, item[1]-16, item[2]*90-90, 16)
@@ -503,8 +517,6 @@ def manage_enemies():
                         closest_robot = j
                 if distance_closest<enemy[7]**2:
                     enemy[4] = "active"; enemy[5] = 120; enemy[6]=closest_robot; enemy[9] = 30
-            
-
 
 
 
@@ -648,7 +660,7 @@ while running:
 
 
 grid[10][18] = 0
-#grid[10][19] = 2
+grid[10][19] = 2
 grid[10][20] = 1
 grid[8][19] = 3
 grid[9][19] = 4
@@ -661,7 +673,7 @@ grid_id.append(["robot_spawner", 1])#name0, rotation1(0 = up, 1 = right, 2 = dow
 grid_id.append(["robot_exit", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left),
 grid_id.append(["item_giver", 1, 0])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), robot_gotten2(0 = no, 1 = stuck, 2 = release)
 grid_id.append(["tree_harvester", 2, "harvester", 15, 300, "wood", 1])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, cooldown3, gatherrate4, gather_what5, gather_amount6
-grid_id.append(["basic_crafter", 2, "crafter", 1, 1, [["stick", 1,1, 60],["wood", 1], ["stick",1]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, crafting_speed4, crafting_tier5, recipe6((input_types0.0, output_types0.1, crafting length), (input_type, input amount) x types, (output type, output amount) x types)
+grid_id.append(["basic_crafter", 2, "crafter", 1, 1, [["stick", 1,1, 60],["wood", 1], ["stick",1]], [0, [0]]])#name0, rotation1(0 = up, 1 = right, 2 = down, 3 = left), type2, crafting_speed3, crafting_tier4, recipe5((input_types0.0, output_types0.1, crafting length), (input_type, input amount) x types, (output type, output amount) x types), current_progress6(ticks done, [input item1, input item2, ...])
 
 running = 1
 
